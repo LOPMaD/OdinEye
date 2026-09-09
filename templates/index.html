@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>OdinEye</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="analyze-area">
+        <textarea id="ipInput" class="analyze-area__ip-input" placeholder="ip"></textarea>
+        <button type="button" id="runButton" class="analyze-area__run-button">Analyze</button>
+        <label>
+            <input id="depth" type="text" placeholder="Depth 0-3">
+        </label>
+    </div>
+    <div class="settings"></div>
+    <div id="analysisResults" class="analysis-results"></div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
