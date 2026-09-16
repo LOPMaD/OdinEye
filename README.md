@@ -1,5 +1,6 @@
 # 👁️ OdinEye
- 
+<img width="1871" height="547" alt="image" src="https://github.com/user-attachments/assets/1b0a259e-fc50-4e44-af1a-6bfcb1926322" />
+
 > Local RDAP analyzer for IP addresses, built for SOC teams.
  
 ## 🔍 What it is
