@@ -11,12 +11,15 @@
         <button type="button" id="runButton" class="analyze-area__run-button">Analyze</button>
         <button type="button" id="runDebugButton" class="analyze-area__run-debug-button">Debug</button>
         <label>
-            <input id="depth" type="text" placeholder="Depth 0-3">
+            <input id="depth" type="text" placeholder="Depth 0-3" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
         </label>
     </div>
     <div id="settingsMenu" class="settings">
     </div>
     <div id="analysisResults" class="analysis-results"></div>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/debug.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/render.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}" type="module"></script>
 </body>
 </html>

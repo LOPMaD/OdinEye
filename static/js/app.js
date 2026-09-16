@@ -1,127 +1,75 @@
-document.getElementById('runButton').addEventListener('click', analyzeIP);
-document.getElementById('runDebugButton').addEventListener('click', analyzeIPDebug);
-document.addEventListener('DOMContentLoaded', renderSettings); 
+import { renderAnalysisResults, renderCategoryCheckboxes } from "./render.js";
+import { fetchCategoryDefinitions, fetchRdapData } from "./api.js";
+import { runDebugAnalysis } from "./debug.js";
 
-function createPerfectIpData(dictValue, dictKey, current, results) {
-    
-    if (current === null || current === undefined) {
-        return;
-    }
-    if (typeof current !== "object" && !Array.isArray(current)) {
-        results.push({[dictValue]:current});
-        return;
-    }
+document.getElementById('runButton').addEventListener('click', runAnalysis);
+document.getElementById('runDebugButton').addEventListener('click', runDebugAnalysis);
+document.addEventListener('DOMContentLoaded', renderCategoryCheckboxes); 
 
-    let step = dictKey[0];
-    let sliceDictKey = dictKey.slice(1);
+async function collectSelectedResults(ipData) {
+    let categoryDefinitions = await fetchCategoryDefinitions();
+    let selectedResults = [];
 
-    if (step === "(key)") {
-        for (const i of Object.keys(current)) {
-            createPerfectIpData(dictValue, sliceDictKey, current[i], results)
-        }
-    } else if (!isNaN(Number(step))) {
-        for (let i = 0; i < current.length; i++) {
-            createPerfectIpData(dictValue, sliceDictKey, current[i], results)
-        }
-    } else {
-        createPerfectIpData(dictValue, sliceDictKey, current[step], results)
-    }
-}
-
-async function getCategories(ipData) {
-    let dictCategories = await getDictCategories();
-    let categoriesValue = [];
-
-    for (let i = 0; i < dictCategories.keys.length; i++) {
-        let checkbox = document.getElementById(`settingsBox${i}`).checked;
-        if (checkbox === true) {
-            let dict = dictCategories.categories[dictCategories.keys[i]];
+    for (let i = 0; i < categoryDefinitions.keys.length; i++) {
+        let isChecked = document.getElementById(`settingsBox${i}`).checked;
+        if (isChecked === true) {
+            let fieldMap = categoryDefinitions.categories[categoryDefinitions.keys[i]];
             
-            for (let [key, value] of Object.entries(dict)) {
-                let dictKey = key.split(".");
-                let results = [];
+            for (let [key, fieldLabel] of Object.entries(fieldMap)) {
+                let pathParts = key.split(".");
+                let matches = [];
                 
-                createPerfectIpData(value, dictKey, ipData, results);
-                if (results != "") {
-                    categoriesValue.push(results);
+                resolvePath(fieldLabel, pathParts, ipData, matches);
+                if (matches != "") {
+                    selectedResults.push(matches);
                 }
             }
 
         }
     }
-    return categoriesValue;
+    return selectedResults;
 }
 
+function resolvePath(fieldLabel, pathParts, current, matches) {
+    
+    if (current === null || current === undefined) {
+        return;
+    }
+    if (typeof current !== "object" && !Array.isArray(current)) {
+        matches.push({[fieldLabel]:current});
+        return;
+    }
 
-async function analyzeIP() {
-    let ipData = await fetchIpData();
-    let categories = await getCategories(ipData);
-    renderResult(categories);
-}
+    let pathSegment = pathParts[0];
+    let remainingPath = pathParts.slice(1);
 
-function renderResult(categories) {
-    document.getElementById('analysisResults').innerHTML = "";
-
-    for (let i = 0; i < categories.length; i++) {
-        for (let j = 0; j < categories[i].length; j++) {
-            let results = Object.entries(categories[i][j])[0];
-            console.log(results);
-            if (categories[i].length > 1) {
-                document.getElementById('analysisResults').innerHTML += `<p>[${j+1}] - ${results[0]} - ${results[1]}</p>`;
-            } else {
-                document.getElementById('analysisResults').innerHTML += `<p>${results[0]} - ${results[1]}</p>`;  
-            }
-        } 
+    if (pathSegment === "(key)") {
+        for (const i of Object.keys(current)) {
+            matches.push({"(key)":i});
+            resolvePath(fieldLabel, remainingPath, current[i], matches)
+        }
+    } else if (!isNaN(Number(pathSegment))) {
+        for (let i = 0; i < current.length; i++) {
+            resolvePath(fieldLabel, remainingPath, current[i], matches)
+        }
+    } else {
+        resolvePath(fieldLabel, remainingPath, current[pathSegment], matches)
     }
 }
 
-async function fetchIpData() {
-    const ipInput = document.getElementById('ipInput').value;
-    let depth = Number(document.getElementById('depth').value);
-
-    const response = await fetch('/api/analyzeIP', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ips: ipInput, depth: depth})
-    });
-
-    const ipData = await response.json();
-    return ipData;
-}
-
-async function renderSettings() {
-    let dict = await getDictCategories();
-    let render = "";
-
-    for (let i = 0; i < dict.keys.length; i++) {
-        render += `<label>
-            <input id="settingsBox${i}" type="checkbox">
-            ${dict.keys[i]}
-        </label>`;
-    }
-    document.getElementById('settingsMenu').innerHTML += render;
-}
-
-async function getDictCategories() {
-    const response = await fetch('/api/getDictCategories');
-    return response.json();
-}
-
-async function analyzeIPDebug() {
-    let ipData = await fetchIpData();
+async function renderAllResults(rdapData, queryIp) {
     document.getElementById('analysisResults').innerHTML = "";
-    renderAllValue(ipData, path="");
+    for (let i = 0; i < rdapData.length; i++) {
+        let selectedResults = await collectSelectedResults(rdapData[i]);
+        renderAnalysisResults(selectedResults, queryIp[i]);   
+    }
 }
 
-function renderAllValue(ipData, path) {
-    Object.entries(ipData).forEach(([key, value]) => {
-        const currentPath = path ? `${path} -> ${key}` : key;
-
-        if (typeof(value) === "object" && value !== null) {
-            renderAllValue(value, currentPath);
-        }
-        else {
-            document.getElementById('analysisResults').innerHTML += `<p>${currentPath}: ${value}</p>`;
-        }
-    });
+async function runAnalysis() {
+    let rdapData = await fetchRdapData();
+    if (rdapData !== undefined){
+        await renderAllResults(rdapData["resultsRdap"], rdapData["validIPs"]);
+    } else {
+        document.getElementById('analysisResults').innerHTML = "We have an error!!! Check the console.";
+    }
 }

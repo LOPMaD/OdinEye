@@ -29,7 +29,7 @@ network_events_remarks = {
 }
 
 entity_general = {
-    "objects.(key).handle": "Entity Handle",
+    # "objects.(key).handle": "Entity Handle",
     "objects.(key).roles.0": "Entity Role",
     "objects.(key).status.0": "Entity Status",
     "objects.(key).links.0": "Entity Link",
