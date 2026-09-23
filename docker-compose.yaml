@@ -1,0 +1,16 @@
+name: odin-eye
+
+services:
+  app:
+    image: lopmdeer/odin-eye:latest
+    expose:
+      - "5000"
+  
+  web:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
