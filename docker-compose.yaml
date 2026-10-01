@@ -2,7 +2,7 @@ name: odin-eye
 
 services:
   app:
-    image: lopmdeer/odin-eye:latest
+    build: .
     expose:
       - "5000"
   
